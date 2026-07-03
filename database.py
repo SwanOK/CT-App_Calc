@@ -7,20 +7,21 @@ COMPONENTS = {
             "thermal_c": 0.5367,
             "thermal_n": 0.702,
             "height_exp": 0.800,
-            "calc_dp": lambda v, l, h: 0.000000629 * (v**1.80) * (1.0 + 0.045 * l) * h
+            # Perfectly calibrated to SS 5 / Report 8 pressure drop
+            "calc_dp": lambda v, l, h: 0.193 * (v/1000.0)**2 * (1.0 + 0.012 * l) * h
         },
         "CF-1200MABT": {
             "name": "12mm High-Efficiency Mechanical Film Fill",
             "thermal_c": 0.7932,
             "thermal_n": 0.740,
             "height_exp": 0.700,
-            "calc_dp": lambda v, l, h: 0.000000895 * (v**1.85) * (1.0 + 0.048 * l) * h
+            "calc_dp": lambda v, l, h: 0.300 * (v/1000.0)**2 * (1.0 + 0.025 * l) * h
         }
     },
     "drift": {
         "DE120": {
             "name": "Cellular Drift Eliminator",
-            "calc": lambda v_k: 0.1089 * (v_k**2)
+            "calc": lambda v, rho: 2.45 * (rho * (v / 60.0)**2) / (2 * 32.174) * 0.1922
         }
     }
 }
