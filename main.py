@@ -1,63 +1,89 @@
 # main.py
+import sys
 from calculations.thermal import calculate_thermal
-from calculations.pressure import calculate_pressure
+from calculations.pressure import solve_airflow
+from database import COMPONENTS
+
+sys.dont_write_bytecode = True 
+
+def get_float_input(prompt_text, default_value):
+    while True:
+        user_in = input(f"{prompt_text} [{default_value}]: ").strip()
+        if user_in == "": return default_value
+        try: return float(user_in)
+        except ValueError: print("  -> Invalid numeric input.")
+
+def get_string_input(prompt_text, default_value, allowed_choices=None):
+    while True:
+        user_in = input(f"{prompt_text} [{default_value}]: ").strip().upper()
+        if user_in == "": return default_value
+        if allowed_choices and user_in in allowed_choices: return user_in
+        if allowed_choices:
+            print(f"  -> Please choose from: {', '.join(allowed_choices)}")
+        else:
+            return user_in
 
 def main():
-    # Defining fully parameterized input variables matching Report 8 baseline configurations
-    inputs = {
-        # Step 1: Thermal
-        "water_flow_gpm": 2200.0,
-        "wet_bulb_f": 84.2,
-        "rel_humidity_pct": 70.0,
-        "range_f": 9.0,
-        "altitude_ft": 750.0,
-        "cold_water_f": 89.60,
-        "override_dbt": 93.0, # Forces DBT to match test report reference points
-        
-        # Step 2: Footprint
-        "num_cells": 1,
-        "cell_width_ft": 18.0,
-        "cell_length_ft": 18.0,
-        "inlet_height_ft": 3.5,
-        "inlet_obstruction_pct": 5.0,
-        
-        # Step 3: Internals Lookups
-        "fill_type": "CF-1900SB",
-        "drift_type": "DE120",
-        "fill_height_ft": 3.0,
-        "spray_height_ft": 1.25,
-        "rain_height_ft": 3.5,
-        "kavl_derate_pct": 0.0, # Zeroed out to check baseline math precision
-        "dp_derate_pct": 0.0,
-        
-        # Step 4: Motor & Plenum Parameters
-        "fan_airflow_cfm": 184435.1,
-        "fan_diameter_ft": 12.0,
-        "seal_disk_diameter_ft": 2.16,
-        "fan_inlet_loss_coeff": 0.50,
-        "transmission_eff_pct": 100.0,
-        "total_fan_eff_pct": 75.0,
-        "fan_stack_regain": False
-    }
+    print("\n" + "="*70)
+    print(" BRENTWOOD S.T.A.R. CALIBRATED RATING ENGINE")
+    print(" Press ENTER to accept the default parameter bracket")
+    print("="*70 + "\n")
+
+    inputs = {}
+
+    print("--- STEP 1: Thermal & Atmospheric Conditions ---")
+    inputs["water_flow_gpm"]   = get_float_input("Water Flow Rate (GPM)", 2200.0)
+    inputs["wet_bulb_f"]       = get_float_input("Entering Air Wet Bulb (°F)", 84.2)
+    inputs["range_f"]          = get_float_input("Thermal Range (°F)", 9.0)
+    inputs["cold_water_f"]     = get_float_input("Target Cold Water Temp (°F)", 89.6)
+    inputs["altitude_ft"]      = get_float_input("Site Altitude (ft)", 750.0)
+    inputs["override_dbt"]     = get_float_input("Explicit Inlet DBT (°F)", 93.0)
+    print()
+
+    print("--- STEP 2: Structural Footprint Geometry ---")
+    inputs["num_cells"]             = get_float_input("Number of Cells", 1.0)
+    inputs["cell_width_ft"]         = get_float_input("Individual Cell Width (ft)", 18.0)
+    inputs["cell_length_ft"]        = get_float_input("Individual Cell Length (ft)", 18.0)
+    inputs["inlet_height_ft"]       = get_float_input("Air Inlet Height (ft)", 3.5)
+    inputs["inlet_obstruction_pct"] = get_float_input("Air Inlet Structural Obstruction (%)", 5.0)
+    print()
+
+    print("--- STEP 3: Internal Components Selection ---")
+    inputs["fill_type"]            = get_string_input("Fill Media Type", "CF-1900SB", list(COMPONENTS["fills"].keys()))
+    inputs["drift_type"]           = get_string_input("Drift Eliminator Model", "DE120", list(COMPONENTS["drift"].keys()))
+    inputs["fill_height_ft"]       = get_float_input("Total Structural Fill Height (ft)", 3.0)
+    inputs["spray_height_ft"]      = get_float_input("Spray Zone Fall Distance (ft)", 1.25)
+    inputs["rain_height_ft"]       = get_float_input("Rain Zone Fall Distance (ft)", 3.5)
+    inputs["kavl_derate_pct"]      = get_float_input("Thermal KaV/L Margin Derate (%)", 5.0)
+    inputs["fill_obstruction_pct"] = get_float_input("Fill Structural Obstruction (%)", 5.0)
+    print()
+
+    print("--- STEP 4: Plenum Mechanics & Fan Stack ---")
+    inputs["motor_rated_hp"]        = get_float_input("Rated Motor Power (HP)", 30.0)
+    inputs["fan_diameter_ft"]       = get_float_input("Fan Blade Diameter (ft)", 12.0)
+    inputs["effective_fan_eff"]     = get_float_input("Design/Peak Fan Efficiency (%)", 65.4)
+    inputs["fan_inlet_loss_coeff"]  = get_float_input("Fan Structure Inlet Loss Coefficient", 0.50)
+
+    print("\nProcessing Iterative System Curve Solver...")
+
+    operating_cfm, pressure_results = solve_airflow(inputs)
+    inputs["fan_airflow_cfm"] = operating_cfm
+    thermal_results = calculate_thermal(inputs)
+
+    print("\n" + "="*86)
+    print(f" {'THERMAL RESULTS':<41} | {'PRESSURE DROP / AIR FLOW RESULTS':<41}")
+    print("="*86)
     
-    inputs["hot_water_f"] = inputs["cold_water_f"] + inputs["range_f"]
-
-    # Run Modules
-    thermal_results, shared_vars = calculate_thermal(inputs)
-    pressure_results = calculate_pressure(inputs, shared_vars)
-
-    print("\n" + "="*35)
-    print(" THERMAL MATRIX ENGINE OUTPUTS")
-    print("="*35)
-    for key, value in thermal_results.items():
-        print(f"{key}: {value}")
-
-    print("\n" + "="*35)
-    print(" PLENUM & PRESSURE DROPS OUTPUTS")
-    print("="*35)
-    for key, value in pressure_results.items():
-        print(f"{key}: {value}")
-    print("\n")
+    t_keys = list(thermal_results.keys())
+    p_keys = list(pressure_results.keys())
+    max_len = max(len(t_keys), len(p_keys))
+    
+    for i in range(max_len):
+        t_str = f"{t_keys[i][:27]:<27}: {thermal_results[t_keys[i]]}" if i < len(t_keys) else ""
+        p_str = f"{p_keys[i][:27]:<27}: {pressure_results[p_keys[i]]}" if i < len(p_keys) else ""
+        print(f" {t_str:<41} | {p_str:<41}")
+        
+    print("="*86 + "\n")
 
 if __name__ == "__main__":
     main()

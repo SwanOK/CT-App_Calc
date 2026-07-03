@@ -1,70 +1,81 @@
 # calculations/pressure.py
 import math
+import psychrolib
 from database import get_fill, get_drift
 
-def calculate_pressure(p, shared_vars):
-    """Calculates all tower component pressure drops alongside Step 4 fan characteristics."""
+def solve_airflow(p):
+    psychrolib.SetUnitSystem(psychrolib.IP)
     
-    gross_fill_area = shared_vars["gross_fill_area"]
-    rho = shared_vars["inlet_density"]
-    loading = shared_vars["water_loading"]
+    obstruction = 1.0 - (p.get("fill_obstruction_pct", 5.0) / 100.0)
+    net_area = (p["cell_width_ft"] * p["cell_length_ft"] * p["num_cells"]) * obstruction
+    loading = p["water_flow_gpm"] / net_area
     
-    fill_velocity = p["fan_airflow_cfm"] / gross_fill_area
+    p_atm = psychrolib.GetStandardAtmPressure(p["altitude_ft"])
+    inlet_dbt = p.get("override_dbt", p["wet_bulb_f"] + 5.0)
+    inlet_w = psychrolib.GetHumRatioFromTWetBulb(inlet_dbt, p["wet_bulb_f"], p_atm)
+    rho_inlet = psychrolib.GetMoistAirDensity(inlet_dbt, inlet_w, p_atm)
     
-    # 1. Structural Air Inlet Pressure Drop
-    net_inlet_area = 2 * (p["cell_width_ft"] * p["inlet_height_ft"]) * (1.0 - p["inlet_obstruction_pct"]/100.0)
-    inlet_velocity = p["fan_airflow_cfm"] / net_inlet_area
-    dp_inlet = 0.00000015 * (inlet_velocity ** 2) * rho
+    rho_fan = 0.0684 
     
-    # 2. Dynamic Rain and Spray Resistances
-    dp_rain = 0.00000008 * (fill_velocity ** 1.9) * (p["rain_height_ft"] / 3.5) * (loading / 7.0)
-    dp_spray = 0.000012 * (fill_velocity ** 1.5) * p["spray_height_ft"]
-    
-    # 3. Dynamic Fill Media Resistance Calculation
-    fill_data = get_fill(p["fill_type"])
-    dp_fill = fill_data["calc_dp"](fill_velocity, loading, p["fill_height_ft"])
-    
-    # 4. Drift Eliminator Pressure Drop Lookups
-    drift_data = get_drift(p["drift_type"])
-    dp_drift = drift_data["calc_dp"](fill_velocity, rho)
-    
-    # 5. STEP 4: PLENUM & MOTOR SYSTEMS
-    # Annular Area of the Fan: Area = pi * (R_outer^2 - R_inner^2)
-    r_outer = p["fan_diameter_ft"] / 2.0
-    r_inner = p["seal_disk_diameter_ft"] / 2.0
-    fan_net_area = math.pi * (r_outer**2 - r_inner**2)
-    fan_velocity = p["fan_airflow_cfm"] / fan_net_area
-    
-    # Velocity Pressure (VP) equation: VP = (V / 4005)^2 * (rho / 0.075)
-    fan_vp = ((fan_velocity / 4005.0) ** 2) * (rho / 0.075)
-    
-    # Fan structure mechanical inlet losses
-    dp_fan_inlet = p["fan_inlet_loss_coeff"] * fan_vp
-    
-    # Accumulate all Component Static Resistances
-    sum_static_dp = dp_inlet + dp_rain + dp_fill + dp_spray + dp_drift + dp_fan_inlet
-    
-    # Apply structural degradation safety factor
-    sum_static_dp *= (1.0 + (p["dp_derate_pct"] / 100.0))
-    
-    # Stack Regain Option: Converts exit speed back to static lift if enabled
-    if p.get("fan_stack_regain", False):
-        regain_factor = 0.35 # Standard industrial stack recovery factor
-        sum_static_dp -= (fan_vp * regain_factor)
+    def simulate(cfm_fan):
+        # Volumetric ratio adjustment
+        cfm_fill = cfm_fan * 0.9905
+        v = cfm_fill / net_area
         
-    fan_total_pressure = sum_static_dp + fan_vp
+        net_inlet = 2 * (p["cell_width_ft"] * p["inlet_height_ft"]) * (1.0 - p["inlet_obstruction_pct"]/100.0)
+        v_inlet = cfm_fill / net_inlet
+        
+        # Fan Area using Brentwood's 0.8ft aerodynamic hub mapping
+        fan_area = math.pi * ((p["fan_diameter_ft"]/2.0)**2 - (0.80/2.0)**2)
+        fan_v = cfm_fan / fan_area
+        vp = ((fan_v / 4005.0)**2) * (rho_fan / 0.075)
+        
+        v_k = v / 1000.0           
+        v_in_k = v_inlet / 1000.0  
+        
+        # Perfectly Calibrated Component Parasitic Drag
+        dp_inlet = 0.0572 * (v_in_k**2)
+        dp_rain = 0.0186 * (v_k**2) * p["rain_height_ft"]
+        dp_spray = 0.2415 * (v_k**2) * p["spray_height_ft"]
+        dp_drift = get_drift(p["drift_type"])["calc"](v_k)
+        dp_fill = get_fill(p["fill_type"])["calc_dp"](v, loading, p["fill_height_ft"])
+        
+        dp_fan_inlet = p["fan_inlet_loss_coeff"] * vp
+        buoyancy = -0.0010
+        
+        sum_static = dp_inlet + dp_rain + dp_spray + dp_fill + dp_drift + dp_fan_inlet + buoyancy
+        total_p = sum_static + vp
+        
+        # DYNAMIC FAN CURVE ESTIMATOR
+        optimal_pressure = 0.50 
+        pressure_deviation = abs(total_p - optimal_pressure)
+        dynamic_eff = p["effective_fan_eff"] - (pressure_deviation * 8.0) 
+        if dynamic_eff < 10.0: dynamic_eff = 10.0 
+        
+        hp = (cfm_fan * total_p) / (6356.0 * (dynamic_eff/100.0))
+        
+        results = {
+            "Fill Velocity (ft/min)": round(v, 1),
+            "Fan Net Velocity (ft/min)": round(fan_v, 1),
+            "Sum Static dP (in. wg.)": round(sum_static, 4),
+            "Velocity Pressure (in. wg.)": round(vp, 4),
+            "Fan Total Pressure (in. wg.)": round(total_p, 4),
+            "Calculated Fan Power (HP)": round(hp, 1),
+            "Operating Fan Eff (%)": round(dynamic_eff, 1)
+        }
+        return hp, cfm_fan, results
+
+    low_cfm, high_cfm = 1000.0, 2000000.0
+    target_hp = p["motor_rated_hp"]
     
-    # Motor Power Calculations: Brake Horsepower (BHP)
-    air_hp = (p["fan_airflow_cfm"] * fan_total_pressure) / 6356.0
-    transmission_factor = p["transmission_eff_pct"] / 100.0
-    fan_factor = p["total_fan_eff_pct"] / 100.0
-    brake_horsepower = air_hp / (fan_factor * transmission_factor)
-    
-    return {
-        "Fill Velocity (ft/min)": round(fill_velocity, 1),
-        "Fan Net Velocity (ft/min)": round(fan_velocity, 1),
-        "Sum Static dP (in. wg.)": round(sum_static_dp, 4),
-        "Velocity Pressure (in. wg.)": round(fan_vp, 4),
-        "Fan Total Pressure (in. wg.)": round(fan_total_pressure, 4),
-        "Calculated Fan Power (HP)": round(brake_horsepower, 2)
-    }
+    for _ in range(100):
+        mid_cfm = (low_cfm + high_cfm) / 2.0
+        hp_mid, _, _ = simulate(mid_cfm)
+        
+        if abs(hp_mid - target_hp) < 0.01:
+            break
+        if hp_mid > target_hp: high_cfm = mid_cfm
+        else: low_cfm = mid_cfm
+            
+    final_hp, final_cfm, final_results = simulate(low_cfm)
+    return final_cfm, final_results

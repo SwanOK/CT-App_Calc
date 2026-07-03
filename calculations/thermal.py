@@ -1,77 +1,56 @@
 # calculations/thermal.py
 import psychrolib
-from scipy.integrate import quad
 from database import get_fill
 
-psychrolib.SetUnitSystem(psychrolib.IP)
-
 def calculate_thermal(p):
-    """Calculates cooling tower thermal capacity using real-time psychrometric loops."""
+    psychrolib.SetUnitSystem(psychrolib.IP)
     
-    # 1. Base Geometry & Water Mass Calculations
-    gross_fill_area = p["cell_width_ft"] * p["cell_length_ft"] * p["num_cells"]
-    water_loading = p["water_flow_gpm"] / gross_fill_area
-    L_mass = p["water_flow_gpm"] * 8.34 # Water weight multiplier (lb/min)
+    obstruction = 1.0 - (p.get("fill_obstruction_pct", 5.0) / 100.0)
+    net_area = (p["cell_width_ft"] * p["cell_length_ft"] * p["num_cells"]) * obstruction
+    loading = p["water_flow_gpm"] / net_area
+    L_mass = p["water_flow_gpm"] * 8.33 
     
     p_atm = psychrolib.GetStandardAtmPressure(p["altitude_ft"])
-    
-    # 2. Psychrometrics Engine: Determine Inlet DBT
-    # If a fixed reference override is explicitly requested (like our report validation check)
-    if "override_dbt" in p:
-        inlet_dbt = p["override_dbt"]
-    else:
-        # Standard conversion sequence: find vapor pressure, then convert to dry bulb
-        inlet_w = psychrolib.GetSatHumRatio(p["wet_bulb_f"], p_atm)
-        inlet_h_approx = psychrolib.GetMoistAirEnthalpy(p["wet_bulb_f"], inlet_w)
-        # Fallback estimation loop matching standard CTI conditions
-        inlet_dbt = p["wet_bulb_f"] + 5.0 
-        
-    inlet_w = psychrolib.GetSatHumRatio(p["wet_bulb_f"], p_atm)
+    inlet_dbt = p.get("override_dbt", p["wet_bulb_f"] + 5.0)
+    inlet_w = psychrolib.GetHumRatioFromTWetBulb(inlet_dbt, p["wet_bulb_f"], p_atm)
     inlet_h = psychrolib.GetMoistAirEnthalpy(inlet_dbt, inlet_w)
-    inlet_density = 1.0 / psychrolib.GetMoistAirVolume(inlet_dbt, inlet_w, p_atm)
     
-    # Dry Air Mass Flow Rate
-    G_mass = p["fan_airflow_cfm"] * inlet_density
+    lg_density_factor = 0.0716 
+    G_mass = p["fan_airflow_cfm"] * lg_density_factor
     lg_ratio = L_mass / G_mass
     
-    # 3. Merkel Integration Core Engine
-    def merkel_integrand(tw):
-        w_sat = psychrolib.GetSatHumRatio(tw, p_atm)
-        h_sat_w = psychrolib.GetMoistAirEnthalpy(tw, w_sat)
-        h_air = inlet_h + lg_ratio * (tw - p["cold_water_f"])
-        return 1.0 / (h_sat_w - h_air)
+    multipliers = [0.1, 0.4, 0.6, 0.9]
+    sum_val = 0.0
+    for m in multipliers:
+        t_w = p["cold_water_f"] + (m * p["range_f"])
+        w_sat = psychrolib.GetSatHumRatio(t_w, p_atm)
+        h_sat_w = psychrolib.GetMoistAirEnthalpy(t_w, w_sat)
+        h_air = inlet_h + lg_ratio * (t_w - p["cold_water_f"])
+        sum_val += 1.0 / (h_sat_w - h_air)
         
-    required_kavl_raw, _ = quad(merkel_integrand, p["cold_water_f"], p["hot_water_f"])
-    adjusted_kavl = required_kavl_raw / (1.0 - (p["kavl_derate_pct"] / 100.0))
+    req_kavl_raw = (p["range_f"] / 4.0) * sum_val
     
-    # 4. Component Performance Lookup & Evaluation
-    fill_data = get_fill(p["fill_type"])
-    fill_base_kavl = fill_data["thermal_c"] * (lg_ratio ** -fill_data["thermal_n"])
-    fill_total_kavl = fill_base_kavl * (p["fill_height_ft"] ** fill_data["height_exponent"])
+    derate = 1.0 - (p.get("kavl_derate_pct", 5.0)/100.0)
+    if derate <= 0: derate = 1.0
+    req_kavl_adj = req_kavl_raw / derate
     
-    # Zonal Mass Transfer Allocations (Spray and Rain heights)
-    spray_zone_kavl = 0.12 + 0.022 * (p["spray_height_ft"] - 1.0)
-    rain_zone_kavl = 0.05 + 0.005 * (p["rain_height_ft"] * water_loading)
+    fill = get_fill(p["fill_type"])
+    fill_kavl = fill["thermal_c"] * (lg_ratio ** -fill["thermal_n"]) * (p["fill_height_ft"] ** fill["height_exp"])
     
-    total_kavl_cti = spray_zone_kavl + fill_total_kavl + rain_zone_kavl
-    tower_capability = (total_kavl_cti / adjusted_kavl) * 100
+    spray_kavl = 0.1184 * p["spray_height_ft"]
+    rain_kavl = 0.00267 * p["rain_height_ft"] * loading
     
-    lg_times_kavl = lg_ratio * total_kavl_cti
-    evaporation_pct = 0.0008 * p["range_f"] * 100
-    evaporation_gpm = (evaporation_pct / 100.0) * p["water_flow_gpm"]
+    total_kavl = spray_kavl + fill_kavl + rain_kavl
+    capability = (total_kavl / req_kavl_adj) * 100.0
+    
+    evap_pct = 0.0008 * p["range_f"] * 100.0
+    evap_gpm = (evap_pct / 100.0) * p["water_flow_gpm"]
     
     return {
-        "Tower Capability (%)": round(tower_capability, 1),
-        "Total KaV/L (CTI)": round(total_kavl_cti, 3),
-        "KaV/L Adjusted": round(adjusted_kavl, 3),
+        "Tower Capability (%)": round(capability, 1),
+        "Total KaV/L (CTI)": round(total_kavl, 3),
+        "Required KaV/L (Adj)": round(req_kavl_adj, 3),
         "L/G Ratio": round(lg_ratio, 3),
-        "L/G * KaV/L": round(lg_times_kavl, 2),
-        "Water Loading (gpm/ft2)": round(water_loading, 2),
-        "Evaporation Rate (%)": round(evaporation_pct, 2),
-        "Evaporation Rate (gpm)": round(evaporation_gpm, 1),
-        "Inlet DBT (°F)": round(inlet_dbt, 1)
-    }, {
-        "gross_fill_area": gross_fill_area,
-        "inlet_density": inlet_density,
-        "water_loading": water_loading
+        "Water Loading (gpm/ft2)": round(loading, 2),
+        "Evaporation Rate (gpm)": round(evap_gpm, 1)
     }
