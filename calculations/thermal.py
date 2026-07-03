@@ -14,7 +14,8 @@ def calculate_thermal(p):
     
     # 2. Psychrometrics
     p_atm = psychrolib.GetStandardAtmPressure(p["altitude_ft"])
-    inlet_w = psychrolib.GetSatAirHumRatio(p["wet_bulb_f"], p_atm)
+    # FIXED: GetSatHumRatio instead of GetSatAirHumRatio
+    inlet_w = psychrolib.GetSatHumRatio(p["wet_bulb_f"], p_atm) 
     inlet_dbt = 93.0 # Standard design DBT for this specific rating
     inlet_h = psychrolib.GetMoistAirEnthalpy(inlet_dbt, inlet_w)
     inlet_density = 1.0 / psychrolib.GetMoistAirVolume(inlet_dbt, inlet_w, p_atm)
@@ -24,7 +25,8 @@ def calculate_thermal(p):
     
     # 3. Merkel Integration
     def merkel_integrand(tw):
-        w_sat = psychrolib.GetSatAirHumRatio(tw, p_atm)
+        # FIXED: GetSatHumRatio instead of GetSatAirHumRatio
+        w_sat = psychrolib.GetSatHumRatio(tw, p_atm)
         h_sat_w = psychrolib.GetMoistAirEnthalpy(tw, w_sat)
         h_air = inlet_h + lg_ratio * (tw - p["cold_water_f"])
         return 1.0 / (h_sat_w - h_air)
