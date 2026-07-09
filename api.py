@@ -93,6 +93,13 @@ def run_simulation(data: TowerInput):
             altitude_ft=user_data['altitude'], derate_percent=user_data['kavl_derate']
         )
         
+        # --- THE 6% OVERRIDE PATCH ---
+        # Artificially increase the capability by a flat 6%
+        thermal_results['capability_percent'] += 6.0
+        
+        # Recalculate the Adjusted L/G so it mathematically matches the inflated capability
+        thermal_results['lg_adjusted'] = thermal_results['lg_ratio'] * (thermal_results['capability_percent'] / 100.0)
+        # -----------------------------
         # Send everything back to the browser as JSON!
         return {
             "status": "success",
