@@ -21,7 +21,7 @@ git clone https://github.com/SwanOK/CT-App_Calc
 
 Open your terminal or command prompt, navigate to the project folder, and run the commands for your operating system:
 
-** Mac /  Linux**
+**Mac / Linux**
 ```bash
 # 1. Create a virtual environment (optional but recommended)
 python3 -m venv venv
@@ -34,7 +34,7 @@ pip install fastapi uvicorn pydantic psychrolib
 uvicorn api:app --reload
 ```
 
-** Windows**
+**Windows**
 ```powershell
 # 1. Create a virtual environment (optional but recommended)
 python -m venv venv
