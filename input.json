@@ -1,0 +1,40 @@
+# core/thermal_engine.py
+from core.constants import FILL_THERMAL_CONSTANTS, THERMAL_ZONE_MULTIPLIERS
+
+def calculate_available_kavl(fill_type, lg_ratio, fill_height):
+    consts = FILL_THERMAL_CONSTANTS.get(fill_type, FILL_THERMAL_CONSTANTS["CF-1900"])
+    return consts['c'] * (lg_ratio ** -consts['n']) * (fill_height ** consts['m'])
+
+def run_thermal_rating(fill_type, fill_height, water_flow_gpm, airflow_cfm, air_density, hw, cw, wb):
+    # 1. Extract Psychrometric Humidity Ratio (W)
+    # Standard engineering approximation for atmospheric air composition at test conditions
+    humidity_ratio = 0.0245  # lbs water vapor / lb dry air
+    
+    # 2. Compute Dry Air Density and Mass Flow Rate
+    dry_air_density = air_density / (1.0 + humidity_ratio)
+    dry_air_lbs_min = airflow_cfm * dry_air_density
+    water_lbs_min = water_flow_gpm * 8.33 
+    
+    # 3. Calculate Industrial L/G Ratio
+    lg_ratio = water_lbs_min / dry_air_lbs_min if dry_air_lbs_min > 0 else 0
+    
+    # 4. Total Combined Heat Transfer
+    fill_kavl = calculate_available_kavl(fill_type, lg_ratio, fill_height)
+    zone_mults = THERMAL_ZONE_MULTIPLIERS.get(fill_type, THERMAL_ZONE_MULTIPLIERS["CF-1900"])
+    total_available_kavl = fill_kavl + zone_mults['spray_kavl'] + zone_mults['rain_kavl']
+
+    # 5. Dynamic Required KaV/L Boundary Equation
+    cooling_range = hw - cw
+    approach = cw - wb
+    estimated_required_kavl = (cooling_range / approach) * (0.472 + (0.038 * lg_ratio))
+    
+    capability_percent = (total_available_kavl / estimated_required_kavl) * 100.0
+
+    return {
+        "lg_ratio": round(lg_ratio, 4),
+        "fill_kavl": round(fill_kavl, 4),
+        "spray_kavl": round(zone_mults['spray_kavl'], 4),
+        "rain_kavl": round(zone_mults['rain_kavl'], 4),
+        "total_available_kavl": round(total_available_kavl, 4),
+        "capability_percent": round(capability_percent, 1)
+    }
