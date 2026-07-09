@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cooling Tower Rating Engine</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;600&display=swap');
+
+        :root {
+            --bg-color: #323437; /* Monkeytype dark background */
+            --text-main: #d1d0c5; /* Soft white text */
+            --text-muted: #646669; /* Dimmed text */
+            --accent: #e2b714; /* Yellow accent */
+            --accent-green: #23b879;
+            --accent-blue: #32a852;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            font-family: 'Fira Code', monospace;
+            color: var(--text-muted);
+            text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+        }
+
+        .grid-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        input, select {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--text-muted);
+            color: var(--accent);
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            padding: 5px 0;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            border-bottom-color: var(--accent);
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            background: transparent;
+            color: var(--text-muted);
+            border: 2px solid var(--text-muted);
+            padding: 15px;
+            font-size: 1.2rem;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            color: var(--bg-color);
+            background-color: var(--text-main);
+            border-color: var(--text-main);
+        }
+
+        /* Results Dashboard */
+        #results-dashboard {
+            display: none; /* Hidden until simulation runs */
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 2px dashed var(--text-muted);
+        }
+
+        .hero-metrics {
+            display: flex;
+            justify-content: space-between;
+            background: #2b2c2f;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .metric-box {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .cap-green { color: var(--accent-green); }
+        .lg-blue { color: #4da6ff; }
+        .cfm-cyan { color: #4df5ff; }
+
+        .tables-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-muted);
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+        }
+
+        td {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .val-right {
+            text-align: right;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>> star_engine_v3</h1>
+
+    <div class="grid-section">
+        <div class="section-title">Thermal Conditions</div>
+        <div class="input-grid">
+            <div class="input-group"><label>Total Water Flow (gpm)</label><input type="number" id="gpm" value="1149.9" step="0.1"></div>
+            <div class="input-group"><label>Hot Water Temp (F)</label><input type="number" id="hw" value="97.5" step="0.1"></div>
+            <div class="input-group"><label>Cold Water Temp (F)</label><input type="number" id="cw" value="90.0" step="0.1"></div>
+            <div class="input-group"><label>Wet Bulb Temp (F)</label><input type="number" id="wb" value="83.0" step="0.1"></div>
+            <div class="input-group"><label>Relative Humidity (%)</label><input type="number" id="rh" value="50.0" step="0.1"></div>
+            <div class="input-group"><label>Site Altitude (ft)</label><input type="number" id="altitude" value="0.0" step="1"></div>
+            <div class="input-group"><label>Motor Power / Cell (HP)</label><input type="number" id="fan_hp" value="10.0" step="0.1"></div>
+        </div>
+    </div>
+
+    <div class="grid-section">
+        <div class="section-title">Tower Geometry</div>
+        <div class="input-grid">
+            <div class="input-group"><label>No. of Cells</label><input type="number" id="cells" value="2"></div>
+            <div class="input-group"><label>Cell Width (ft)</label><input type="number" id="cell_width_ft" value="10.0" step="0.1"></div>
+            <div class="input-group"><label>Cell Length (ft)</label><input type="number" id="cell_length_ft" value="9.0" step="0.1"></div>
+            <div class="input-group"><label>Inlet Height (ft)</label><input type="number" id="inlet_height_ft" value="4.0" step="0.1"></div>
+            <div class="input-group"><label>Inlet Obstruction (%)</label><input type="number" id="inlet_obstruction_percent" value="5.0" step="0.1"></div>
+            <div class="input-group"><label>Louver Coefficient</label><input type="number" id="louver_coeff" value="1.0" step="0.1"></div>
+        </div>
+    </div>
+
+    <div class="grid-section">
+        <div class="section-title">Fill Section</div>
+        <div class="input-grid">
+            <div class="input-group">
+                <label>Fill Type</label>
+                <select id="fill_type">
+                    <option value="CF-1200">CF-1200</option>
+                    <option value="CF-1900">CF-1900</option>
+                </select>
+            </div>
+            <div class="input-group"><label>Fill Height (ft)</label><input type="number" id="fill_height_ft" value="1.96" step="0.01"></div>
+            <div class="input-group"><label>Fill Obstruction (%)</label><input type="number" id="fill_obstruction_percent" value="5.0" step="0.1"></div>
+            <div class="input-group"><label>KaV/L Derate (%)</label><input type="number" id="kavl_derate" value="5.0" step="0.1"></div>
+        </div>
+    </div>
+
+    <div class="grid-section">
+        <div class="section-title">Plenum & Fan</div>
+        <div class="input-grid">
+            <div class="input-group"><label>Fan Diameter (ft)</label><input type="number" id="fan_diameter_ft" value="6.0" step="0.1"></div>
+            <div class="input-group"><label>Hub Diameter (ft)</label><input type="number" id="hub_diameter_ft" value="1.26" step="0.01"></div>
+            <div class="input-group"><label>Fan Inlet Loss Coeff.</label><input type="number" id="fan_inlet_coeff" value="0.50" step="0.1"></div>
+        </div>
+    </div>
+
+    <button id="runBtn" onclick="runSimulation()">Execute Simulation</button>
+
+    <div id="results-dashboard">
+        <div class="hero-metrics">
+            <div class="metric-box">
+                <div class="metric-label">Capability</div>
+                <div class="metric-value cap-green" id="res-cap">--%</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Operating L/G</div>
+                <div class="metric-value lg-blue" id="res-lg">--</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Adjusted L/G</div>
+                <div class="metric-value lg-blue" id="res-lg-adj" style="color:var(--accent)">--</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Airflow (CFM)</div>
+                <div class="metric-value cfm-cyan" id="res-cfm">--</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Derived DB (F)</div>
+                <div class="metric-value" style="color:#fff" id="res-db">--</div>
+            </div>
+        </div>
+
+        <div class="tables-container">
+            <div>
+                <div class="section-title">KaV/L Data</div>
+                <table>
+                    <tbody id="kavl-table">
+                        </tbody>
+                </table>
+            </div>
+            <div>
+                <div class="section-title">System Pressure Drop</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th style="text-align:right">Vel (fpm)</th>
+                            <th style="text-align:right">dP (in.wg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dp-table">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function runSimulation() {
+        const btn = document.getElementById('runBtn');
+        btn.innerText = "Calculating...";
+        btn.style.color = "var(--accent)";
+
+        // 1. Gather all inputs from the DOM
+        const payload = {
+            gpm: parseFloat(document.getElementById('gpm').value),
+            hw: parseFloat(document.getElementById('hw').value),
+            cw: parseFloat(document.getElementById('cw').value),
+            wb: parseFloat(document.getElementById('wb').value),
+            rh: parseFloat(document.getElementById('rh').value),
+            altitude: parseFloat(document.getElementById('altitude').value),
+            fan_hp: parseFloat(document.getElementById('fan_hp').value),
+            cells: parseInt(document.getElementById('cells').value),
+            cell_width_ft: parseFloat(document.getElementById('cell_width_ft').value),
+            cell_length_ft: parseFloat(document.getElementById('cell_length_ft').value),
+            inlet_height_ft: parseFloat(document.getElementById('inlet_height_ft').value),
+            inlet_obstruction_percent: parseFloat(document.getElementById('inlet_obstruction_percent').value),
+            louver_coeff: parseFloat(document.getElementById('louver_coeff').value),
+            fill_type: document.getElementById('fill_type').value,
+            fill_height_ft: parseFloat(document.getElementById('fill_height_ft').value),
+            fill_obstruction_percent: parseFloat(document.getElementById('fill_obstruction_percent').value),
+            kavl_derate: parseFloat(document.getElementById('kavl_derate').value),
+            fan_diameter_ft: parseFloat(document.getElementById('fan_diameter_ft').value),
+            hub_diameter_ft: parseFloat(document.getElementById('hub_diameter_ft').value),
+            fan_inlet_coeff: parseFloat(document.getElementById('fan_inlet_coeff').value)
+        };
+
+        try {
+            // 2. Send to FastAPI Backend
+            const response = await fetch('http://127.0.0.1:8000/simulate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Server Error");
+            const data = await response.json();
+
+            // 3. Populate Dashboard
+            document.getElementById('results-dashboard').style.display = 'block';
+            
+            document.getElementById('res-cap').innerText = data.metrics.capability.toFixed(1) + '%';
+            document.getElementById('res-lg').innerText = data.metrics.oper_lg.toFixed(4);
+            document.getElementById('res-lg-adj').innerText = data.metrics.adj_lg.toFixed(4);
+            document.getElementById('res-cfm').innerText = data.metrics.cfm.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+            document.getElementById('res-db').innerText = data.metrics.derived_db.toFixed(1);
+
+            // Populate KaV/L Table
+            const th = data.thermal;
+            let kavlHtml = `
+                <tr><td>Spray Zone</td><td class="val-right">${th.spray_kavl.toFixed(4)}</td></tr>
+                <tr><td style="color:#4da6ff">Fill (${payload.fill_type})</td><td class="val-right">${th.fill_kavl.toFixed(4)}</td></tr>
+                <tr><td>Rain Zone</td><td class="val-right">${th.rain_kavl.toFixed(4)}</td></tr>
+                <tr><td>Total Available KaV/L</td><td class="val-right">${th.total_available_kavl.toFixed(4)}</td></tr>
+                <tr><td>Derate (%)</td><td class="val-right">${payload.kavl_derate.toFixed(1)}</td></tr>
+            `;
+            if (th.hwt_corr_applied > 0) {
+                kavlHtml += `<tr><td style="color:#ff4d4d">HWT Correction (%)</td><td class="val-right" style="color:#ff4d4d">${th.hwt_corr_applied.toFixed(2)}</td></tr>`;
+            }
+            kavlHtml += `<tr><td style="color:#fff">KaV/L Adjusted</td><td class="val-right" style="color:#fff; font-weight:bold">${th.kavl_adjusted.toFixed(4)}</td></tr>`;
+            document.getElementById('kavl-table').innerHTML = kavlHtml;
+
+            // Populate Pressure Drop Table
+            const ar = data.aero;
+            let dpHtml = '';
+            for (const [section, metrics] of Object.entries(ar)) {
+                if (section === "Total Static dP" || section === "Operating CFM") continue;
+                dpHtml += `<tr>
+                    <td>${section}</td>
+                    <td class="val-right" style="color:var(--accent-green)">${metrics.vel.toFixed(1)}</td>
+                    <td class="val-right" style="color:#fff">${metrics.dp.toFixed(4)}</td>
+                </tr>`;
+            }
+            dpHtml += `<tr><td style="color:#fff">Sum Static dP</td><td></td><td class="val-right" style="color:#fff; font-weight:bold">${ar["Total Static dP"].toFixed(4)}</td></tr>`;
+            document.getElementById('dp-table').innerHTML = dpHtml;
+
+        } catch (error) {
+            alert("Connection failed! Make sure your FastAPI backend is running.");
+        } finally {
+            btn.innerText = "Execute Simulation";
+            btn.style.color = "var(--text-muted)";
+        }
+    }
+</script>
+
+</body>
+</html>
