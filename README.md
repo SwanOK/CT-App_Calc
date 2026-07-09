@@ -6,7 +6,7 @@ The project is split into a high-performance Python/FastAPI backend and a sleek,
 
 ---
 
-## 🚀 Quick Start: How to Run
+##  Quick Start: How to Run
 
 ### Prerequisites
 You must have **Python 3.8+** installed on your system. 
@@ -21,7 +21,7 @@ git clone https://github.com/SwanOK/CT-App_Calc
 
 Open your terminal or command prompt, navigate to the project folder, and run the commands for your operating system:
 
-**🍎 Mac / 🐧 Linux**
+** Mac /  Linux**
 ```bash
 # 1. Create a virtual environment (optional but recommended)
 python3 -m venv venv
@@ -34,7 +34,7 @@ pip install fastapi uvicorn pydantic psychrolib
 uvicorn api:app --reload
 ```
 
-**🪟 Windows**
+** Windows**
 ```powershell
 # 1. Create a virtual environment (optional but recommended)
 python -m venv venv
@@ -56,7 +56,7 @@ Enter your tower parameters and click **Execute Simulation**. The browser will s
 
 ---
 
-## 🧠 Core Engineering Features
+##  Core Engineering Features
 
 Unlike basic nominal-tonnage calculators, this engine calculates cooling tower performance using strict physical laws:
 
