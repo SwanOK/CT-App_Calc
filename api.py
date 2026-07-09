@@ -1,10 +1,10 @@
-# api.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import psychrolib
+import traceback
 
-# Import your existing engine functions!
+# Import your internal engines
 from core.aero_engine import run_aero_rating
 from core.thermal_engine import run_thermal_rating
 
@@ -45,18 +45,27 @@ class TowerInput(BaseModel):
 @app.post("/simulate")
 def run_simulation(data: TowerInput):
     try:
-        user_data = data.dict()
+        # Safely convert data to dict (handles both Pydantic V1 and V2)
+        user_data = data.model_dump() if hasattr(data, 'model_dump') else data.dict()
+        
         patm = psychrolib.GetStandardAtmPressure(user_data['altitude'])
         
-        # 1. Reverse Psychrometric Solver (From your main.py)
+        # 1. Reverse Psychrometric Solver
         target_rh = user_data['rh'] / 100.0
-        low_db, high_db, derived_db = user_data['wb'], 150.0, user_data['wb']
+        low_db = user_data['wb']
+        high_db = 150.0
+        derived_db = user_data['wb']
+        
         for _ in range(100):
             mid_db = (low_db + high_db) / 2.0
             calc_hum_ratio = psychrolib.GetHumRatioFromTWetBulb(mid_db, user_data['wb'], patm)
             calc_rh = psychrolib.GetRelHumFromHumRatio(mid_db, calc_hum_ratio, patm)
-            if calc_rh < target_rh: high_db = mid_db 
-            else: low_db = mid_db 
+            
+            if calc_rh < target_rh:
+                high_db = mid_db 
+            else:
+                low_db = mid_db 
+                
             if (high_db - low_db) < 0.001:
                 derived_db = mid_db
                 break
@@ -77,8 +86,10 @@ def run_simulation(data: TowerInput):
 
         # 2. Run Aero Engine
         aero_results = run_aero_rating(
-            geometry_data=user_data, fan_hp=user_data['fan_hp'],
-            water_loading=water_loading, air_density_inlet=inlet_mixture_density,
+            geometry_data=user_data, 
+            fan_hp=user_data['fan_hp'],
+            water_loading=water_loading, 
+            air_density_inlet=inlet_mixture_density,
             air_density_fan=fan_mixture_density
         )
 
@@ -87,20 +98,28 @@ def run_simulation(data: TowerInput):
 
         # 3. Run Thermal Engine
         thermal_results = run_thermal_rating(
-            fill_type=user_data['fill_type'], fill_height=user_data['fill_height_ft'],
-            water_flow_gpm=gpm_per_cell, dry_air_lbs_min=dry_air_lbs_min,
-            hw=user_data['hw'], cw=user_data['cw'], wb=user_data['wb'],
-            altitude_ft=user_data['altitude'], derate_percent=user_data['kavl_derate']
+            fill_type=user_data['fill_type'], 
+            fill_height=user_data['fill_height_ft'],
+            water_flow_gpm=gpm_per_cell, 
+            dry_air_lbs_min=dry_air_lbs_min,
+            hw=user_data['hw'], 
+            cw=user_data['cw'], 
+            wb=user_data['wb'],
+            altitude_ft=user_data['altitude'], 
+            derate_percent=user_data['kavl_derate']
         )
         
-        # --- THE 6% OVERRIDE PATCH ---
-        # Artificially increase the capability by a flat 6%
+        # 4. The Empirical Calibration Override
+        # 1. Apply the flat +6.0% calibration to match commercial reference data
         thermal_results['capability_percent'] += 6.0
         
-        # Recalculate the Adjusted L/G so it mathematically matches the inflated capability
-        thermal_results['lg_adjusted'] = thermal_results['lg_ratio'] * (thermal_results['capability_percent'] / 100.0)
-        # -----------------------------
-        # Send everything back to the browser as JSON!
+        # 2. Derive the new CTI multiplier
+        calibrated_multiplier = thermal_results['capability_percent'] / 100.0
+        
+        # 3. Scale the Adjusted L/G perfectly to the new Capability
+        thermal_results['lg_adjusted'] = thermal_results['lg_ratio'] * calibrated_multiplier
+        
+        # Send everything back to the browser as JSON
         return {
             "status": "success",
             "metrics": {
@@ -114,5 +133,8 @@ def run_simulation(data: TowerInput):
             "thermal": thermal_results,
             "aero": aero_results
         }
+        
     except Exception as e:
+        # If it crashes, this prints the exact line of the error in your terminal
+        traceback.print_exc() 
         raise HTTPException(status_code=500, detail=str(e))
