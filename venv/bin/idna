@@ -1,4 +1,4 @@
-#!/home/swan/Documents/Git/CT-App_Calc/venv/bin/python3
+#!/home/swan/Documents/CT-App_Calc/venv/bin/python3
 import sys
 from idna.cli import main
 if __name__ == '__main__':
