@@ -11,6 +11,12 @@ The project is split into a high-performance Python/FastAPI backend and a sleek,
 ### Prerequisites
 You must have **Python 3.8+** installed on your system. 
 
+run this to clone the repo:
+```bash
+git clone https://github.com/SwanOK/CT-App_Calc
+```
+
+
 ### 1. Start the Python Backend (FastAPI)
 
 Open your terminal or command prompt, navigate to the project folder, and run the commands for your operating system:
