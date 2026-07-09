@@ -1,4 +1,4 @@
-# STAR Engine v3 - Data-Driven Cooling Tower Rating API
+# Jugaad Engine v3 - Data-Driven Cooling Tower Rating API
 
 A first-principles thermodynamic and aerodynamic rating engine for counterflow cooling towers. This project reverse-engineers commercial CTI (Cooling Technology Institute) sizing algorithms, utilizing Tchebycheff integration, dynamic evaporative mass shrinkage, and non-dimensional fan affinity laws to calculate exact tower capability, L/G ratios, and system pressure drops.
 
