@@ -3,289 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jugaad Engine | Rating Simulator</title>
+    <title>Delta Engine | Rating Simulator</title>
     <style>
-        /* Import elegant Serif and clean Sans-Serif fonts */
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=Inter:wght@300;400;600&family=Fira+Code:wght@400;600&display=swap');
-
-        :root {
-            --bg-color: #0a0a0a; /* Deep premium black */
-            --bg-panel: #141414; /* Slightly lighter for contrast */
-            --text-main: #f4f4f4; /* Crisp white */
-            --text-muted: #888888; /* Elegant gray */
-            --accent-gold: #d4af37; /* Premium Gold */
-            --accent-green: #4ade80;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Split Screen Layout */
-        .image-panel {
-            flex: 0 0 45%;
-            background-image: url('https://images.pexels.com/photos/13395142/pexels-photo-13395142.jpeg?cs=tinysrgb&dpr=1&w=500');
-            background-size: cover;
-            background-position: center;
-            border-right: 1px solid #222;
-            position: relative;
-        }
-
-        /* Subtle dark gradient overlay on the image */
-        .image-panel::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(to right, rgba(0,0,0,0.1), rgba(10,10,10,0.9));
-        }
-
-        .content-panel {
-            flex: 1;
-            padding: 60px 80px;
-            overflow-y: auto;
-            background-color: var(--bg-color);
-        }
-
-        /* Custom Scrollbar for the right panel */
+        :root { --bg-color: #0a0a0a; --bg-panel: #141414; --text-main: #f4f4f4; --text-muted: #888888; --accent-gold: #d4af37; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        .image-panel { flex: 0 0 40%; background-image: url('https://images.pexels.com/photos/13395142/pexels-photo-13395142.jpeg'); background-size: cover; background-position: center; border-right: 1px solid #222; position: relative; }
+        .image-panel::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to right, rgba(0,0,0,0.1), rgba(10,10,10,0.9)); }
+        .content-panel { flex: 1; padding: 60px 80px; overflow-y: auto; background-color: var(--bg-color); }
         .content-panel::-webkit-scrollbar { width: 6px; }
         .content-panel::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-
-        h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 3.5rem;
-            letter-spacing: -1px;
-            color: #ffffff;
-            margin-bottom: 5px;
-        }
-
-        .subtitle {
-            color: var(--accent-gold);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-bottom: 50px;
-            display: flex;
-            align-items: center;
-        }
-
-        .subtitle::before {
-            content: '';
-            display: inline-block;
-            width: 30px;
-            height: 2px;
-            background-color: var(--accent-gold);
-            margin-right: 15px;
-        }
-
-        .grid-section {
-            margin-bottom: 50px;
-        }
-
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            color: var(--text-main);
-            margin-bottom: 25px;
-            border-bottom: 1px solid #222;
-            padding-bottom: 10px;
-        }
-
-        .input-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 30px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        input, select {
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid #444;
-            color: var(--text-main);
-            font-family: 'Fira Code', monospace;
-            font-size: 1.1rem;
-            padding: 8px 0;
-            outline: none;
-            transition: border-color 0.3s ease, color 0.3s ease;
-        }
-
-        input:focus, select:focus {
-            border-bottom-color: var(--accent-gold);
-            color: var(--accent-gold);
-        }
-
-        /* Dropdown styling for dark mode */
-        select option {
-            background-color: var(--bg-panel);
-            color: var(--text-main);
-        }
-
-        button {
-            background-color: transparent;
-            color: var(--accent-gold);
-            border: 1px solid var(--accent-gold);
-            padding: 18px 40px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-        }
-
-        button:hover {
-            background-color: var(--accent-gold);
-            color: var(--bg-color);
-        }
-
-        /* Results Dashboard */
-        #results-dashboard {
-            display: none;
-            margin-top: 60px;
-            padding-top: 50px;
-            border-top: 1px solid #222;
-        }
-
-        .hero-metrics {
-            display: grid;
-            /* Widened the minimum box size from 120px to 180px */
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .metric-box {
-            background: var(--bg-panel);
-            padding: 25px 20px;
-            border-left: 3px solid var(--accent-gold);
-            overflow: hidden; /* Prevents any future text from spilling out */
-        }
-
-        .metric-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 10px;
-            white-space: nowrap; /* Keeps the label cleanly on one line */
-        }
-
-        .metric-value {
-            /* Dynamically scales the font down if the screen gets too small */
-            font-size: clamp(1.3rem, 2.5vw, 1.8rem); 
-            font-family: 'Fira Code', monospace;
-            color: var(--text-main);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        th {
-            text-align: left;
-            color: var(--text-muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.7rem;
-            border-bottom: 1px solid #333;
-            padding-bottom: 12px;
-        }
-
-        td {
-            padding: 12px 0;
-            border-bottom: 1px solid #222;
-            color: var(--text-main);
-        }
-
-        .val-right {
-            text-align: right;
-            font-family: 'Fira Code', monospace;
-            color: var(--accent-gold);
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            body { flex-direction: column; overflow: auto; }
-            .image-panel { height: 300px; flex: none; border-right: none; border-bottom: 1px solid #222; }
-            .content-panel { padding: 40px; overflow-y: visible; }
-            .tables-container { grid-template-columns: 1fr; }
-        }
+        h1 { font-family: 'Playfair Display', serif; font-size: 3.5rem; letter-spacing: -1px; color: #ffffff; margin-bottom: 5px; }
+        .subtitle { color: var(--accent-gold); text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; font-weight: 600; margin-bottom: 50px; display: flex; align-items: center; }
+        .subtitle::before { content: ''; display: inline-block; width: 30px; height: 2px; background-color: var(--accent-gold); margin-right: 15px; }
+        .grid-section { margin-bottom: 50px; }
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--text-main); margin-bottom: 25px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
+        input, select { background: transparent; border: none; border-bottom: 1px solid #444; color: var(--text-main); font-family: 'Fira Code', monospace; font-size: 1.1rem; padding: 8px 0; outline: none; transition: border-color 0.3s ease, color 0.3s ease; }
+        input:focus, select:focus { border-bottom-color: var(--accent-gold); color: var(--accent-gold); }
+        select option { background-color: var(--bg-panel); color: var(--text-main); }
+        button { background-color: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 18px 40px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; margin-top: 20px; width: 100%; }
+        button:hover { background-color: var(--accent-gold); color: var(--bg-color); }
+        #results-dashboard { display: none; margin-top: 60px; padding-top: 50px; border-top: 1px solid #222; }
+        .hero-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .metric-box { background: var(--bg-panel); padding: 25px 20px; border-left: 3px solid var(--accent-gold); overflow: hidden; }
+        .metric-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; white-space: nowrap; }
+        .metric-value { font-size: clamp(1.3rem, 2.5vw, 1.8rem); font-family: 'Fira Code', monospace; color: var(--text-main); }
+        .cap-gold { color: var(--accent-gold); }
+        .tables-container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-bottom: 30px;}
+        th { text-align: left; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 0.7rem; border-bottom: 1px solid #333; padding-bottom: 12px; }
+        td { padding: 12px 0; border-bottom: 1px solid #222; color: var(--text-main); }
+        .val-right { text-align: right; font-family: 'Fira Code', monospace; color: var(--accent-gold); }
     </style>
 </head>
 <body>
-
     <div class="image-panel"></div>
-    
     <div class="content-panel">
-        <h1>STAR Engine</h1>
+        <h1>Delta Engine</h1>
         <div class="subtitle">Thermodynamic Rating Platform</div>
 
         <div class="grid-section">
             <div class="section-title">Thermal Conditions</div>
             <div class="input-grid">
-                <div class="input-group"><label>Total Water Flow (gpm)</label><input type="number" id="gpm" value="1149.9" step="0.1"></div>
-                <div class="input-group"><label>Hot Water Temp (F)</label><input type="number" id="hw" value="97.5" step="0.1"></div>
-                <div class="input-group"><label>Cold Water Temp (F)</label><input type="number" id="cw" value="90.0" step="0.1"></div>
-                <div class="input-group"><label>Wet Bulb Temp (F)</label><input type="number" id="wb" value="83.0" step="0.1"></div>
-                <div class="input-group"><label>Relative Humidity (%)</label><input type="number" id="rh" value="50.0" step="0.1"></div>
-                <div class="input-group"><label>Site Altitude (ft)</label><input type="number" id="altitude" value="0.0" step="1"></div>
-                <div class="input-group"><label>Motor Power / Cell (HP)</label><input type="number" id="fan_hp" value="10.0" step="0.1"></div>
+                <div class="input-group"><label>Flow (gpm)</label><input type="number" id="gpm" value="1250.0" step="0.1"></div>
+                <div class="input-group"><label>HW Temp (F)</label><input type="number" id="hw" value="97.5" step="0.1"></div>
+                <div class="input-group"><label>CW Temp (F)</label><input type="number" id="cw" value="90.0" step="0.1"></div>
+                <div class="input-group"><label>WB Temp (F)</label><input type="number" id="wb" value="83.0" step="0.1"></div>
+                <div class="input-group"><label>Rel Humidity (%)</label><input type="number" id="rh" value="75.0" step="0.1"></div>
+                <div class="input-group"><label>Altitude (ft)</label><input type="number" id="altitude" value="800.0" step="1"></div>
+                <div class="input-group"><label>Motor Power (HP)</label><input type="number" id="fan_hp" value="12.5" step="0.1"></div>
             </div>
         </div>
 
         <div class="grid-section">
-            <div class="section-title">Tower Geometry</div>
+            <div class="section-title">Tower Geometry & Fill</div>
             <div class="input-grid">
-                <div class="input-group"><label>No. of Cells</label><input type="number" id="cells" value="2"></div>
-                <div class="input-group"><label>Cell Width (ft)</label><input type="number" id="cell_width_ft" value="10.0" step="0.1"></div>
-                <div class="input-group"><label>Cell Length (ft)</label><input type="number" id="cell_length_ft" value="9.0" step="0.1"></div>
+                <div class="input-group"><label>No. of Cells</label><input type="number" id="cells" value="1"></div>
+                <div class="input-group">
+                    <label>Air Inlet Faces</label>
+                    <select id="air_inlet_faces">
+                        <option value="4">4 Sides (Single Cell)</option>
+                        <option value="2">2 Sides (Inline)</option>
+                    </select>
+                </div>
+                <div class="input-group"><label>Cell Width (ft)</label><input type="number" id="cell_width_ft" value="12.0" step="0.1"></div>
+                <div class="input-group"><label>Cell Length (ft)</label><input type="number" id="cell_length_ft" value="11.0" step="0.1"></div>
                 <div class="input-group"><label>Inlet Height (ft)</label><input type="number" id="inlet_height_ft" value="4.0" step="0.1"></div>
-                <div class="input-group"><label>Inlet Obstruction (%)</label><input type="number" id="inlet_obstruction_percent" value="5.0" step="0.1"></div>
-                <div class="input-group"><label>Louver Coefficient</label><input type="number" id="louver_coeff" value="1.0" step="0.1"></div>
-            </div>
-        </div>
-
-        <div class="grid-section">
-            <div class="section-title">Fill Section</div>
-            <div class="input-grid">
+                <div class="input-group"><label>Inlet Obstr (%)</label><input type="number" id="inlet_obstruction_percent" value="5.0" step="0.1"></div>
+                
                 <div class="input-group">
                     <label>Fill Type</label>
                     <select id="fill_type">
-                        <option value="CF-1200">CF-1200</option>
-                        <option value="CF-1900">CF-1900</option>
+                        <option value="CF-1200 MABT">CF-1200 MABT</option>
+                        <option value="CF-1900 SB">CF-1900 SB</option>
                     </select>
                 </div>
+                <div class="input-group"><label>Spray Height (ft)</label><input type="number" id="spray_height_ft" value="1.0" step="0.01"></div>
                 <div class="input-group"><label>Fill Height (ft)</label><input type="number" id="fill_height_ft" value="1.96" step="0.01"></div>
-                <div class="input-group"><label>Fill Obstruction (%)</label><input type="number" id="fill_obstruction_percent" value="5.0" step="0.1"></div>
+                <div class="input-group"><label>Rain Height (ft)</label><input type="number" id="rain_height_ft" value="4.0" step="0.01"></div>
+                <div class="input-group"><label>Fill Obstr (%)</label><input type="number" id="fill_obstruction_percent" value="5.0" step="0.1"></div>
                 <div class="input-group"><label>KaV/L Derate (%)</label><input type="number" id="kavl_derate" value="5.0" step="0.1"></div>
             </div>
         </div>
@@ -293,9 +93,17 @@
         <div class="grid-section">
             <div class="section-title">Plenum & Fan</div>
             <div class="input-grid">
-                <div class="input-group"><label>Fan Diameter (ft)</label><input type="number" id="fan_diameter_ft" value="6.0" step="0.1"></div>
+                <div class="input-group"><label>Fan Diameter (ft)</label><input type="number" id="fan_diameter_ft" value="7.0" step="0.1"></div>
                 <div class="input-group"><label>Hub Diameter (ft)</label><input type="number" id="hub_diameter_ft" value="1.26" step="0.01"></div>
-                <div class="input-group"><label>Fan Inlet Loss Coeff.</label><input type="number" id="fan_inlet_coeff" value="0.50" step="0.1"></div>
+                <div class="input-group"><label>Tip Clearance (in)</label><input type="number" id="fan_tip_clearance_in" value="1.0" step="0.01"></div>
+                <div class="input-group"><label>Plenum Hole Dia (ft)</label><input type="number" id="plenum_hole_diameter_ft" value="7.17" step="0.01"></div>
+                <div class="input-group"><label>Plenum Height (ft)</label><input type="number" id="plenum_height_ft" value="2.54" step="0.01"></div>
+                <div class="input-group"><label>Stack Height (ft)</label><input type="number" id="fan_stack_height_ft" value="1.50" step="0.01"></div>
+                
+                <div class="input-group"><label>Louver Coeff</label><input type="number" id="louver_coeff" value="1.0" step="0.1"></div>
+                <div class="input-group"><label>Fan Inlet Coeff</label><input type="number" id="fan_inlet_coeff" value="0.50" step="0.1"></div>
+                <div class="input-group"><label>Trans. Eff (%)</label><input type="number" id="trans_eff" value="95.0" step="0.1"></div>
+                <div class="input-group"><label>Total Fan Eff (%)</label><input type="number" id="fan_eff" value="75.0" step="0.1"></div>
             </div>
         </div>
 
@@ -304,44 +112,27 @@
         <div id="results-dashboard">
             <div class="section-title">Performance Metrics</div>
             <div class="hero-metrics">
-                <div class="metric-box">
-                    <div class="metric-label">Capability</div>
-                    <div class="metric-value cap-gold" id="res-cap">--%</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Operating L/G</div>
-                    <div class="metric-value" id="res-lg">--</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Adjusted L/G</div>
-                    <div class="metric-value" id="res-lg-adj">--</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Airflow (CFM)</div>
-                    <div class="metric-value" id="res-cfm">--</div>
-                </div>
+                <div class="metric-box"><div class="metric-label">Capability</div><div class="metric-value cap-gold" id="res-cap">--%</div></div>
+                <div class="metric-box"><div class="metric-label">Operating L/G</div><div class="metric-value" id="res-lg">--</div></div>
+                <div class="metric-box"><div class="metric-label">Adjusted L/G</div><div class="metric-value" id="res-lg-adj">--</div></div>
+                <div class="metric-box"><div class="metric-label">Airflow (CFM)</div><div class="metric-value" id="res-cfm">--</div></div>
             </div>
 
             <div class="tables-container">
                 <div>
                     <div class="metric-label">KaV/L Data Breakdown</div>
-                    <table>
-                        <tbody id="kavl-table">
-                            </tbody>
-                    </table>
+                    <table><tbody id="kavl-table"></tbody></table>
+                    
+                    <div class="metric-label" style="margin-top:20px;">Thermal Data - Misc</div>
+                    <table><tbody id="misc-table"></tbody></table>
                 </div>
                 <div>
-                    <div class="metric-label">System Pressure Drop</div>
+                    <div class="metric-label">Pressure Results</div>
                     <table>
                         <thead>
-                            <tr>
-                                <th>Section</th>
-                                <th style="text-align:right">Vel (fpm)</th>
-                                <th style="text-align:right">dP (in.wg)</th>
-                            </tr>
+                            <tr><th>Section</th><th style="text-align:right">Vel (fpm)</th><th style="text-align:right">Den (lb/ft³)</th><th style="text-align:right">dP (in.wg)</th></tr>
                         </thead>
-                        <tbody id="dp-table">
-                            </tbody>
+                        <tbody id="dp-table"></tbody>
                     </table>
                 </div>
             </div>
@@ -362,74 +153,75 @@
                 altitude: parseFloat(document.getElementById('altitude').value),
                 fan_hp: parseFloat(document.getElementById('fan_hp').value),
                 cells: parseInt(document.getElementById('cells').value),
+                air_inlet_faces: parseInt(document.getElementById('air_inlet_faces').value),
                 cell_width_ft: parseFloat(document.getElementById('cell_width_ft').value),
                 cell_length_ft: parseFloat(document.getElementById('cell_length_ft').value),
                 inlet_height_ft: parseFloat(document.getElementById('inlet_height_ft').value),
                 inlet_obstruction_percent: parseFloat(document.getElementById('inlet_obstruction_percent').value),
                 louver_coeff: parseFloat(document.getElementById('louver_coeff').value),
                 fill_type: document.getElementById('fill_type').value,
+                spray_height_ft: parseFloat(document.getElementById('spray_height_ft').value),
                 fill_height_ft: parseFloat(document.getElementById('fill_height_ft').value),
+                rain_height_ft: parseFloat(document.getElementById('rain_height_ft').value),
                 fill_obstruction_percent: parseFloat(document.getElementById('fill_obstruction_percent').value),
                 kavl_derate: parseFloat(document.getElementById('kavl_derate').value),
                 fan_diameter_ft: parseFloat(document.getElementById('fan_diameter_ft').value),
                 hub_diameter_ft: parseFloat(document.getElementById('hub_diameter_ft').value),
-                fan_inlet_coeff: parseFloat(document.getElementById('fan_inlet_coeff').value)
+                fan_tip_clearance_in: parseFloat(document.getElementById('fan_tip_clearance_in').value),
+                plenum_hole_diameter_ft: parseFloat(document.getElementById('plenum_hole_diameter_ft').value),
+                plenum_height_ft: parseFloat(document.getElementById('plenum_height_ft').value),
+                fan_stack_height_ft: parseFloat(document.getElementById('fan_stack_height_ft').value),
+                fan_inlet_coeff: parseFloat(document.getElementById('fan_inlet_coeff').value),
+                trans_eff: parseFloat(document.getElementById('trans_eff').value),
+                fan_eff: parseFloat(document.getElementById('fan_eff').value)
             };
 
             try {
-                const response = await fetch('http://127.0.0.1:8000/simulate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error("Server Error");
+                const response = await fetch('http://127.0.0.1:8000/simulate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error("Server rejected data.");
                 const data = await response.json();
+                const m = data.metrics; const th = data.thermal; const ar = data.aero;
 
                 document.getElementById('results-dashboard').style.display = 'block';
+                setTimeout(() => { document.getElementById('results-dashboard').scrollIntoView({ behavior: 'smooth' }); }, 100);
                 
-                // Scroll down to results smoothly
-                setTimeout(() => {
-                    document.getElementById('results-dashboard').scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-                
-                document.getElementById('res-cap').innerText = data.metrics.capability.toFixed(1) + '%';
-                document.getElementById('res-lg').innerText = data.metrics.oper_lg.toFixed(4);
-                document.getElementById('res-lg-adj').innerText = data.metrics.adj_lg.toFixed(4);
-                document.getElementById('res-cfm').innerText = data.metrics.cfm.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                document.getElementById('res-cap').innerText = m.capability.toFixed(1) + '%';
+                document.getElementById('res-lg').innerText = m.oper_lg.toFixed(4);
+                document.getElementById('res-lg-adj').innerText = m.adj_lg.toFixed(4);
+                document.getElementById('res-cfm').innerText = m.cfm.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
 
-                const th = data.thermal;
-                let kavlHtml = `
-                    <tr><td>Spray Zone</td><td class="val-right">${th.spray_kavl.toFixed(4)}</td></tr>
-                    <tr><td style="color:#fff">Fill (${payload.fill_type})</td><td class="val-right">${th.fill_kavl.toFixed(4)}</td></tr>
-                    <tr><td>Rain Zone</td><td class="val-right">${th.rain_kavl.toFixed(4)}</td></tr>
-                    <tr><td>Total Available</td><td class="val-right">${th.total_available_kavl.toFixed(4)}</td></tr>
-                    <tr><td>Derate (%)</td><td class="val-right">${payload.kavl_derate.toFixed(1)}</td></tr>
-                `;
-                if (th.hwt_corr_applied > 0) {
-                    kavlHtml += `<tr><td style="color:#ff4d4d">HWT Correction (%)</td><td class="val-right" style="color:#ff4d4d">${th.hwt_corr_applied.toFixed(2)}</td></tr>`;
-                }
-                kavlHtml += `<tr><td style="color:var(--accent-gold)">KaV/L Adjusted</td><td class="val-right" style="color:var(--accent-gold); font-weight:bold">${th.kavl_adjusted.toFixed(4)}</td></tr>`;
+                let kavlHtml = `<tr><td>Spray Zone</td><td class="val-right">${th.spray_kavl.toFixed(3)}</td></tr>
+                    <tr><td style="color:#fff">Fill (${payload.fill_type})</td><td class="val-right">${th.fill_kavl.toFixed(3)}</td></tr>
+                    <tr><td>Rain Zone</td><td class="val-right">${th.rain_kavl.toFixed(3)}</td></tr>
+                    <tr><td>Total Available (CTI)</td><td class="val-right">${th.total_available_kavl.toFixed(3)}</td></tr>
+                    <tr><td>Derate (%)</td><td class="val-right">${payload.kavl_derate.toFixed(1)}</td></tr>`;
+                if (th.hwt_corr_applied > 0) kavlHtml += `<tr><td style="color:#ff4d4d">HWT Correction (%)</td><td class="val-right" style="color:#ff4d4d">${th.hwt_corr_applied.toFixed(2)}</td></tr>`;
+                kavlHtml += `<tr><td style="color:var(--accent-gold)">KaV/L Adjusted</td><td class="val-right" style="color:var(--accent-gold); font-weight:bold">${th.kavl_adjusted.toFixed(3)}</td></tr>`;
                 document.getElementById('kavl-table').innerHTML = kavlHtml;
 
-                const ar = data.aero;
+                document.getElementById('misc-table').innerHTML = `
+                    <tr><td>Water Loading</td><td class="val-right">${m.water_loading.toFixed(2)} gpm/ft²</td></tr>
+                    <tr><td>Fan:Box Ratio</td><td class="val-right">${m.fan_box_ratio.toFixed(1)} %</td></tr>
+                    <tr><td>Effective Fan Eff.</td><td class="val-right">${m.effective_fan_eff.toFixed(2)} %</td></tr>
+                    <tr><td>Dry Air Rate</td><td class="val-right">${m.dry_air_rate.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1})} lb/min</td></tr>
+                    <tr><td>Evaporation Rate</td><td class="val-right">${m.evap_pct.toFixed(2)} %</td></tr>
+                    <tr><td>Evaporation Rate</td><td class="val-right">${m.evap_gpm.toFixed(1)} gpm</td></tr>
+                    <tr><td>Inlet DBT</td><td class="val-right">${m.derived_db.toFixed(1)} °F</td></tr>
+                    <tr><td>Exit WBT</td><td class="val-right">${m.exit_wbt.toFixed(1)} °F</td></tr>`;
+
                 let dpHtml = '';
-                for (const [section, metrics] of Object.entries(ar)) {
-                    if (section === "Total Static dP" || section === "Operating CFM") continue;
-                    dpHtml += `<tr>
-                        <td>${section}</td>
-                        <td class="val-right" style="color:var(--text-main)">${metrics.vel.toFixed(1)}</td>
-                        <td class="val-right">${metrics.dp.toFixed(4)}</td>
-                    </tr>`;
-                }
-                dpHtml += `<tr><td style="color:var(--accent-gold)">Sum Static dP</td><td></td><td class="val-right" style="color:var(--accent-gold); font-weight:bold">${ar["Total Static dP"].toFixed(4)}</td></tr>`;
+                const order = ["Air Inlet", "Rain Zone", "Fill", "Spray Zone", "Drift Eliminator", "Fan Inlet", "Buoyancy", "Sum Static dP", "Net Fan VP", "Fan Total Pressure"];
+                order.forEach(section => {
+                    const metrics = ar[section];
+                    if(section === "Sum Static dP" || section === "Fan Total Pressure") {
+                        dpHtml += `<tr><td style="color:var(--accent-gold)">${section}</td><td></td><td></td><td class="val-right" style="color:var(--accent-gold); font-weight:bold">${metrics.toFixed(4)}</td></tr>`;
+                    } else if (metrics) {
+                        dpHtml += `<tr><td>${section}</td><td class="val-right" style="color:var(--text-main)">${metrics.vel.toFixed(1)}</td><td class="val-right">${metrics.rho.toFixed(4)}</td><td class="val-right">${metrics.dp.toFixed(4)}</td></tr>`;
+                    }
+                });
                 document.getElementById('dp-table').innerHTML = dpHtml;
 
-            } catch (error) {
-                alert("Connection failed! Make sure your FastAPI backend is running.");
-            } finally {
-                btn.innerText = "Execute Simulation";
-            }
+            } catch (error) { alert("FastAPI crashed. Check terminal for missing inputs."); } finally { btn.innerText = "Execute Simulation"; }
         }
     </script>
 </body>

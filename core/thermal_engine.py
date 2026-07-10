@@ -43,7 +43,7 @@ def run_thermal_rating(fill_type, fill_height, water_flow_gpm, dry_air_lbs_min, 
     
     lg_ratio_operating = water_lbs_min / dry_air_lbs_min if dry_air_lbs_min > 0 else 0
     
-    f_const = FILL_THERMAL.get(fill_type, FILL_THERMAL.get("CF-1900"))
+    f_const = FILL_THERMAL.get(fill_type, FILL_THERMAL.get("CF-1200 MABT"))
     fill_kavl_op = f_const['c'] * (lg_ratio_operating ** -f_const['n']) * (fill_height ** f_const['m'])
     spray_kavl_op = ZONE_THERMAL['Spray']['a'] * (lg_ratio_operating ** ZONE_THERMAL['Spray']['b'])
     rain_kavl_op = ZONE_THERMAL['Rain']['a'] * (lg_ratio_operating ** ZONE_THERMAL['Rain']['b'])
